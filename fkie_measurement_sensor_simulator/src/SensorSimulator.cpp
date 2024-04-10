@@ -83,8 +83,8 @@ SensorSimulator::SensorSimulator()
 
   measurement_pub = node->create_publisher<fkie_measurement_msgs::msg::Measurement>(topic_measurement, 10);
   measurement_array_pub = node->create_publisher<fkie_measurement_msgs::msg::MeasurementArray>(topic_measurement_array, 10);
-  sensor_array_pub = node->create_publisher<fkie_measurement_msgs::msg::MeasurementArray>(topic_sensor_array, 10);
-  marker_location_pub = node->create_publisher<visualization_msgs::msg::MarkerArray>("sensor_locations", 10);
+  sensor_array_pub = node->create_publisher<fkie_measurement_msgs::msg::MeasurementArray>(topic_sensor_array, rclcpp::QoS(10).transient_local().reliable().keep_last(1));
+  marker_location_pub = node->create_publisher<visualization_msgs::msg::MarkerArray>("sensor_locations", rclcpp::QoS(10).transient_local().reliable().keep_last(1));
   publishSourceLocations();
   spin();
 }
