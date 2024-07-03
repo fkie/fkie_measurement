@@ -33,19 +33,26 @@ class MeasurementCollectorNode():#rospy.SubscribeListener
         self.ros_node = node
         self.ros_node.get_logger().info('Launch parameter:')
 
-        self.param_topic_pub_measurement_array = self.ros_node.get_parameter_or('~topic_pub_measurement_array', 'measurement_array_agg')
+        self.ros_node.declare_parameter('param_topic_pub_measurement_array', '')
+        self.ros_node.declare_parameter('param_topic_sub_measurement_array', '')
+        self.ros_node.declare_parameter('global_frame', '')
+        self.ros_node.declare_parameter('utm_zone_number', 32)
+        self.ros_node.declare_parameter('utm_zone_letter', 'U')
+        
+        
+        self.param_topic_pub_measurement_array = self.ros_node.get_parameter_or('topic_pub_measurement_array', 'measurement_array_agg')
         self.ros_node.get_logger().info(f"  topic_pub_measurement_array: {self.param_topic_pub_measurement_array}")
 
-        self.param_topic_sub_measurement_array = self.ros_node.get_parameter_or('~topic_sub_measurement_array', 'measurement_array')
+        self.param_topic_sub_measurement_array = self.ros_node.get_parameter_or('topic_sub_measurement_array', 'measurement_array')
         self.ros_node.get_logger().info(f"  topic_sub_measurement_array: {self.param_topic_sub_measurement_array}")
 
-        self.global_frame = self.ros_node.get_parameter_or('~frame_global', "map")
+        self.global_frame = self.ros_node.get_parameter_or('frame_global', "map")
         self.ros_node.get_logger().info(f"  frame_global: {self.global_frame}")
 
-        self.utm_zone_number = self.ros_node.get_parameter_or('~utm_zone_number', "")
+        self.utm_zone_number = self.ros_node.get_parameter_or('utm_zone_number', "").get_parameter_value().integer_value
         self.ros_node.get_logger().info(f"  utm_zone_number: {self.utm_zone_number}")
 
-        self.utm_zone_letter = self.ros_node.get_parameter_or('~utm_zone_letter', "")
+        self.utm_zone_letter = self.ros_node.get_parameter_or('utm_zone_letter', "").get_parameter_value().string_value
         self.ros_node.get_logger().info(f"  utm_zone_letter: {self.utm_zone_letter}")
 
         # unique_serial_id: MeasurementArray with full_history
