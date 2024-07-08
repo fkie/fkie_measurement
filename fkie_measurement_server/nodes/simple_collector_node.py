@@ -22,6 +22,8 @@ import rclpy, sys
 from rclpy.node import Node
 import tf2_ros
 import threading
+from sensor_msgs.msg import NavSatFix
+from geodesy import utm
 
 from std_msgs.msg import Int32
 from fkie_measurement_msgs.msg import Measurement, MeasurementArray, MeasurementLocated, MeasurementValue
@@ -38,6 +40,7 @@ class MeasurementCollectorNode():#rospy.SubscribeListener
         self.ros_node.declare_parameter('global_frame', '')
         self.ros_node.declare_parameter('utm_zone_number', 32)
         self.ros_node.declare_parameter('utm_zone_letter', 'U')
+        self.ros_node.declare_parameter('topic_fix', "fix")
         
         
         self.param_topic_pub_measurement_array = self.ros_node.get_parameter_or('topic_pub_measurement_array', 'measurement_array_agg')
@@ -54,6 +57,10 @@ class MeasurementCollectorNode():#rospy.SubscribeListener
 
         self.utm_zone_letter = self.ros_node.get_parameter_or('utm_zone_letter', "").get_parameter_value().string_value
         self.ros_node.get_logger().info(f"  utm_zone_letter: {self.utm_zone_letter}")
+        
+        self.param_topic_fix = self.ros_node.get_parameter(
+            'topic_fix').get_parameter_value().string_value
+        self.ros_node.get_logger().info(f"  topic_fix: {self.param_topic_fix}")
 
         # unique_serial_id: MeasurementArray with full_history
         self.sensor_histories: Dict[str, MeasurementArray] = {}
@@ -62,6 +69,12 @@ class MeasurementCollectorNode():#rospy.SubscribeListener
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self.ros_node)
 
         # create subscribers for all registered sensors
+        if self.param_topic_fix:
+            self.topic_sub_fix = self.ros_node.create_subscription(
+                NavSatFix, self.param_topic_fix, self.cb_fix, 5)
+            self.ros_node.get_logger().info(
+                f"subscribed to {self.param_topic_fix}")
+        
         self.pub_measurement_array = self.ros_node.create_publisher(MeasurementArray, self.param_topic_pub_measurement_array,5)   
         self.ros_node.get_logger().info(f"advertised to {self.pub_measurement_array.topic_name}")
 
@@ -75,6 +88,13 @@ class MeasurementCollectorNode():#rospy.SubscribeListener
         self.ros_node.get_logger().info(f"subscriberd to {self.sub_m_array.topic_name}")
         
         self.sub_client_count = self.ros_node.create_subscription(Int32, '/client_count', self.callback_client_count, 5)
+    
+    def cb_fix(self, msg):
+        utm_point = utm.fromLatLong(
+            msg.latitude, msg.longitude, msg.altitude)
+        if utm_point.valid():
+            self.fix_timestamp = msg.header.stamp
+            self.utm_position = utm_point
 
     def callback_measurement(self, msg):
         # type: (Measurement) -> None
